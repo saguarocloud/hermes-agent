@@ -196,6 +196,11 @@ if [ "$DEV_SANDBOX_INTERACTIVE" = true ]; then
   dev_mounts=(--dev /dev)
 fi
 
+# Every HTTPS client must trust the proxy's MITM CA (ca.pem), Node included:
+# Node ignores SSL_CERT_FILE, so NODE_EXTRA_CA_CERTS is the only way npm learns
+# it. Pointing it at the real bundle made every npm fetch fail with
+# UNABLE_TO_VERIFY_LEAF_SIGNATURE (the proxy logs it as SSLEOFError), which
+# the installer treats as fatal.
 exec bwrap \
   --unshare-pid \
   --die-with-parent --proc /proc --tmpfs /tmp \
@@ -216,7 +221,7 @@ exec bwrap \
   --setenv CURL_CA_BUNDLE /work/certs/ca.pem \
   --setenv SSL_CERT_FILE /work/certs/ca.pem \
   --setenv GIT_SSL_CAINFO /work/certs/ca.pem \
-  --setenv NODE_EXTRA_CA_CERTS /work/certs/real-ca.pem \
+  --setenv NODE_EXTRA_CA_CERTS /work/certs/ca.pem \
   --setenv OPENSSL_CONF /work/certs/openssl.cnf \
   --setenv HTTP_PROXY http://127.0.0.1:8080 \
   --setenv HTTPS_PROXY http://127.0.0.1:8080 \
